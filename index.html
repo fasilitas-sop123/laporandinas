@@ -4,33 +4,45 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Laporan Kegiatan</title>
-    <!-- Tailwind CSS untuk styling -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Library html2pdf.js untuk export PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        /* Mengunci ukuran kertas A4 agar tidak terpotong di HP/iPhone */
-        .pdf-canvas {
-            width: 794px !important;
-            max-width: 794px !important;
-            min-width: 794px !important;
-            background-color: #ffffff;
-            padding: 30px;
-            box-sizing: border-box;
-            margin: 0 auto;
+        /* Gaya Tampilan Cetak & Ekspor PDF */
+        @media print {
+            /* Sembunyikan elemen navigasi/tombol saat dicetak */
+            .no-print {
+                display: none !important;
+            }
+            body {
+                background: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            .page-container {
+                box-shadow: none !important;
+                border: none !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                padding: 0 !important;
+            }
+            textarea {
+                border: none !important;
+                resize: none !important;
+                padding: 0 !important;
+            }
         }
-        
-        /* Memastikan teks berpindah baris secara rapi */
+
+        /* Penanganan teks panjang */
         .cell-text {
             white-space: pre-wrap;
             word-break: break-word;
-            overflow-wrap: break-word;
         }
     </style>
 </head>
 <body class="bg-slate-100 min-h-screen py-6 px-3 text-slate-800">
 
-    <div class="max-w-4xl mx-auto mb-4 bg-white p-4 rounded-xl shadow-sm flex justify-between items-center flex-wrap gap-2">
+    <!-- Header Panel Tombol -->
+    <div class="max-w-4xl mx-auto mb-4 bg-white p-4 rounded-xl shadow-sm flex justify-between items-center flex-wrap gap-2 no-print">
         <h1 class="text-xl font-bold text-slate-700">Aplikasi Laporan Kegiatan</h1>
         <div class="flex gap-2">
             <button onclick="addRow()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow transition flex items-center gap-1">
@@ -43,14 +55,14 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z" clip-rule="evenodd" />
                 </svg>
-                Simpan PDF
+                Simpan / Cetak PDF
             </button>
         </div>
     </div>
 
-    <!-- Area Dokumen yang Akan Dikonversi ke PDF -->
-    <div class="overflow-x-auto pb-6">
-        <div id="reportArea" class="pdf-canvas shadow-md border border-slate-200 rounded-sm">
+    <!-- Area Dokumen Utama -->
+    <div class="max-w-4xl mx-auto">
+        <div id="reportArea" class="page-container bg-white p-6 shadow-md border border-slate-200 rounded-sm">
             
             <!-- Header Dokumen -->
             <div class="text-center mb-6 pb-4 border-b-2 border-slate-300">
@@ -62,18 +74,18 @@
             <table class="w-full border-collapse border border-slate-300 text-sm">
                 <thead>
                     <tr class="bg-slate-100 text-slate-700 uppercase text-xs tracking-wider">
-                        <th class="border border-slate-300 p-3 w-12 text-center">NO</th>
-                        <th class="border border-slate-300 p-3 w-64 text-center">DOKUMENTASI</th>
-                        <th class="border border-slate-300 p-3 text-center">KETERANGAN</th>
-                        <th class="border border-slate-300 p-3 w-16 text-center no-print">AKSI</th>
+                        <th class="border border-slate-300 p-2 w-10 text-center">NO</th>
+                        <th class="border border-slate-300 p-2 w-1/3 text-center">DOKUMENTASI</th>
+                        <th class="border border-slate-300 p-2 text-center">KETERANGAN</th>
+                        <th class="border border-slate-300 p-2 w-12 text-center no-print">AKSI</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody">
-                    <!-- Baris akan ditambahkan secara dinamis lewat JS -->
+                    <!-- Baris akan ditambahkan secara dinamis -->
                 </tbody>
             </table>
 
-            <!-- Footer Dokumen -->
+            <!-- Footer Tanggal -->
             <div class="mt-8 pt-4 border-t border-slate-200 text-right text-xs text-slate-400">
                 <p id="printDate"></p>
             </div>
@@ -83,7 +95,6 @@
     <script>
         let rowCount = 0;
 
-        // Tambah baris baru saat pertama kali dimuat
         window.onload = function() {
             addRow();
             addRow();
@@ -104,10 +115,10 @@
             tr.id = `row-${rowCount}`;
 
             tr.innerHTML = `
-                <td class="border border-slate-300 p-3 text-center font-bold text-slate-700 row-number">
+                <td class="border border-slate-300 p-2 text-center font-bold text-slate-700 row-number">
                     ${tbody.children.length + 1}
                 </td>
-                <td class="border border-slate-300 p-3 align-top">
+                <td class="border border-slate-300 p-2 align-top">
                     <div class="flex flex-col items-center gap-2">
                         <div id="preview-container-${rowCount}" class="hidden w-full flex justify-center">
                             <img id="preview-${rowCount}" class="max-h-48 rounded shadow-sm object-contain border border-slate-200" src="" alt="Dokumentasi">
@@ -118,11 +129,11 @@
                         </label>
                     </div>
                 </td>
-                <td class="border border-slate-300 p-3 align-top">
-                    <textarea class="w-full h-28 p-2 border border-slate-200 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none resize-y text-slate-700 text-sm cell-text" placeholder="Isikan keterangan kegiatan secara bebas di sini..."></textarea>
+                <td class="border border-slate-300 p-2 align-top">
+                    <textarea class="w-full h-28 p-2 border border-slate-200 rounded focus:ring-1 focus:ring-blue-500 outline-none resize-y text-slate-700 text-sm cell-text" placeholder="Isikan keterangan kegiatan..."></textarea>
                 </td>
-                <td class="border border-slate-300 p-3 text-center align-middle no-print">
-                    <button onclick="deleteRow(${rowCount})" class="text-red-500 hover:text-red-700 p-1 rounded" title="Hapus Baris">
+                <td class="border border-slate-300 p-2 text-center align-middle no-print">
+                    <button onclick="deleteRow(${rowCount})" class="text-red-500 hover:text-red-700 p-1 rounded" title="Hapus">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" />
                         </svg>
@@ -169,48 +180,28 @@
         function exportToPDF() {
             setPrintDate();
             
-            // Sembunyikan tombol & input yang tidak perlu masuk ke PDF
-            const noPrintElements = document.querySelectorAll('.no-print');
-            noPrintElements.forEach(el => el.style.display = 'none');
-
-            // Konversi textarea menjadi div teks agar hasil cetak jernih & teratur
+            // Mengubah textarea menjadi teks biasa sementara sebelum cetak
             const textareas = document.querySelectorAll('textarea');
             const createdDivs = [];
             textareas.forEach(ta => {
                 const div = document.createElement('div');
-                div.className = 'p-1 text-slate-700 text-sm cell-text min-h-[80px]';
+                div.className = 'p-1 text-slate-700 text-sm cell-text min-h-[60px]';
                 div.innerText = ta.value;
                 ta.style.display = 'none';
                 ta.parentNode.appendChild(div);
                 createdDivs.push({ ta, div });
             });
 
-            const element = document.getElementById('reportArea');
-            
-            // Opsi optimasi PDF khusus iPhone / iOS
-            const opt = {
-                margin:       [10, 10, 10, 10],
-                filename:     'Laporan_Kegiatan.pdf',
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { 
-                    scale: 2, 
-                    useCORS: true, 
-                    scrollX: 0, 
-                    scrollY: 0,
-                    windowWidth: 1024 
-                },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
+            // Memicu dialog Simpan PDF Bawaan iOS/Safari
+            window.print();
 
-            // Proses pembuatan PDF
-            html2pdf().set(opt).from(element).save().then(() => {
-                // Kembalikan tampilan semula setelah PDF diunduh
-                noPrintElements.forEach(el => el.style.display = '');
+            // Mengembalikan ke bentuk input setelah cetak
+            setTimeout(() => {
                 createdDivs.forEach(item => {
                     item.ta.style.display = '';
                     item.div.remove();
                 });
-            });
+            }, 500);
         }
     </script>
 </body>
