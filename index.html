@@ -4,283 +4,213 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Laporan Kegiatan</title>
-    <!-- Tailwind CSS CDN -->
+    <!-- Tailwind CSS untuk styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- html2pdf.js CDN for PDF export -->
+    <!-- Library html2pdf.js untuk export PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-        body {
-            font-family: 'Inter', sans-serif;
+        /* Mengunci ukuran kertas A4 agar tidak terpotong di HP/iPhone */
+        .pdf-canvas {
+            width: 794px !important;
+            max-width: 794px !important;
+            min-width: 794px !important;
+            background-color: #ffffff;
+            padding: 30px;
+            box-sizing: border-box;
+            margin: 0 auto;
         }
-        /* Custom styles for PDF output */
-        .pdf-print-container {
-            background-color: #ffffff !important;
-            color: #000000 !important;
-        }
-        /* Hide action buttons when generating PDF */
-        .html2pdf__container .no-print,
-        .no-print-element {
-            display: none !important;
+        
+        /* Memastikan teks berpindah baris secara rapi */
+        .cell-text {
+            white-space: pre-wrap;
+            word-break: break-word;
+            overflow-wrap: break-word;
         }
     </style>
 </head>
-<body class="bg-slate-100 min-h-screen py-6 px-3 sm:px-6">
+<body class="bg-slate-100 min-h-screen py-6 px-3 text-slate-800">
 
-    <!-- Container Utama -->
-    <div class="max-w-4xl mx-auto">
-        
-        <!-- Action Header Bar (Bukan Bagian dari Cetak PDF) -->
-        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 mb-6 flex flex-wrap items-center justify-between gap-3">
-            <div class="flex items-center gap-2 text-slate-700">
-                <i class="fa-solid fa-clipboard-list text-indigo-600 text-xl"></i>
-                <h1 class="font-bold text-lg">Form Laporan Kegiatan</h1>
-            </div>
-            
-            <div class="flex items-center gap-2 w-full sm:w-auto">
-                <button id="add-row-btn" onclick="addRow()" class="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2.5 rounded-xl transition-all shadow-sm active:scale-95">
-                    <i class="fa-solid fa-plus"></i>
-                    <span>Tambah Baris (+ ADD)</span>
-                </button>
-                
-                <button id="export-pdf-btn" onclick="exportToPDF()" class="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2.5 rounded-xl transition-all shadow-sm active:scale-95">
-                    <i class="fa-solid fa-file-pdf"></i>
-                    <span>Simpan PDF</span>
-                </button>
-            </div>
+    <div class="max-w-4xl mx-auto mb-4 bg-white p-4 rounded-xl shadow-sm flex justify-between items-center flex-wrap gap-2">
+        <h1 class="text-xl font-bold text-slate-700">Aplikasi Laporan Kegiatan</h1>
+        <div class="flex gap-2">
+            <button onclick="addRow()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow transition flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+                </svg>
+                Tambah Baris
+            </button>
+            <button onclick="exportToPDF()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded-lg shadow transition flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z" clip-rule="evenodd" />
+                </svg>
+                Simpan PDF
+            </button>
         </div>
+    </div>
 
-        <!-- Dokumen Laporan (Area yang diexport ke PDF) -->
-        <div id="pdf-content" class="bg-white rounded-2xl shadow-md border border-slate-200 p-6 sm:p-8 md:p-10 transition-all">
+    <!-- Area Dokumen yang Akan Dikonversi ke PDF -->
+    <div class="overflow-x-auto pb-6">
+        <div id="reportArea" class="pdf-canvas shadow-md border border-slate-200 rounded-sm">
             
-            <!-- Judul Dokumen -->
-            <div class="text-center mb-8 border-b border-slate-200 pb-4">
-                <h2 class="text-3xl font-extrabold text-slate-800 tracking-wide uppercase">Kegiatan</h2>
+            <!-- Header Dokumen -->
+            <div class="text-center mb-6 pb-4 border-b-2 border-slate-300">
+                <h2 class="text-2xl font-black uppercase tracking-wide text-slate-800">KEGIATAN</h2>
                 <p class="text-sm text-slate-500 mt-1">Dokumentasi dan Laporan Pelaksanaan Kegiatan</p>
             </div>
 
-            <!-- Tabel Kegiatan -->
-            <div class="overflow-x-auto">
-                <table class="w-full border-collapse border border-slate-300 text-left text-sm text-slate-700">
-                    <thead>
-                        <tr class="bg-slate-100 text-slate-800 uppercase text-xs font-semibold tracking-wider">
-                            <th class="border border-slate-300 px-3 py-3 text-center w-12">NO</th>
-                            <th class="border border-slate-300 px-4 py-3 text-center min-w-[200px]">DOKUMENTASI</th>
-                            <th class="border border-slate-300 px-4 py-3 text-center min-w-[250px]">KETERANGAN</th>
-                            <th class="border border-slate-300 px-3 py-3 text-center w-20 action-column">AKSI</th>
-                        </tr>
-                    </thead>
-                    <tbody id="activity-table-body">
-                        <!-- Baris tabel akan ditambahkan secara dinamis lewat JavaScript -->
-                    </tbody>
-                </table>
-            </div>
+            <!-- Tabel Utama -->
+            <table class="w-full border-collapse border border-slate-300 text-sm">
+                <thead>
+                    <tr class="bg-slate-100 text-slate-700 uppercase text-xs tracking-wider">
+                        <th class="border border-slate-300 p-3 w-12 text-center">NO</th>
+                        <th class="border border-slate-300 p-3 w-64 text-center">DOKUMENTASI</th>
+                        <th class="border border-slate-300 p-3 text-center">KETERANGAN</th>
+                        <th class="border border-slate-300 p-3 w-16 text-center no-print">AKSI</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <!-- Baris akan ditambahkan secara dinamis lewat JS -->
+                </tbody>
+            </table>
 
-            <!-- Pesan jika tabel kosong -->
-            <div id="empty-state" class="hidden text-center py-10 border border-dashed border-slate-300 rounded-lg mt-2">
-                <i class="fa-regular fa-folder-open text-4xl text-slate-300 mb-2"></i>
-                <p class="text-slate-500">Belum ada baris kegiatan. Klik "Tambah Baris" untuk menambahkan.</p>
-            </div>
-
-            <!-- Footer Dokumen untuk PDF -->
-            <div class="mt-12 pt-6 border-t border-slate-100 flex justify-end text-right text-xs text-slate-400">
-                <p id="pdf-date-info">Dicetak pada: -</p>
+            <!-- Footer Dokumen -->
+            <div class="mt-8 pt-4 border-t border-slate-200 text-right text-xs text-slate-400">
+                <p id="printDate"></p>
             </div>
         </div>
     </div>
 
-    <!-- Toast Notification Box -->
-    <div id="toast" class="fixed bottom-5 right-5 bg-slate-800 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 transition-opacity duration-300 opacity-0 pointer-events-none z-50">
-        <i id="toast-icon" class="fa-solid fa-circle-info text-indigo-400"></i>
-        <span id="toast-message" class="text-sm">Notifikasi</span>
-    </div>
-
     <script>
-        // Counter untuk penomoran ID unik internal
-        let rowCounter = 0;
+        let rowCount = 0;
 
-        // Load awal dengan 2 baris standar seperti pada gambar referensi
+        // Tambah baris baru saat pertama kali dimuat
         window.onload = function() {
             addRow();
             addRow();
+            setPrintDate();
         };
 
-        // Fungsi Tambah Baris Otomatis
-        function addRow() {
-            rowCounter++;
-            const tbody = document.getElementById('activity-table-body');
-            const rowId = `row-${Date.now()}-${rowCounter}`;
+        function setPrintDate() {
+            const now = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+            document.getElementById('printDate').innerText = 'Dicetak pada: ' + now.toLocaleDateString('id-ID', options);
+        }
 
+        function addRow() {
+            rowCount++;
+            const tbody = document.getElementById('tableBody');
             const tr = document.createElement('tr');
-            tr.id = rowId;
-            tr.className = "hover:bg-slate-50 transition-colors";
+            tr.className = "row-item border-b border-slate-300";
+            tr.id = `row-${rowCount}`;
 
             tr.innerHTML = `
-                <td class="row-number border border-slate-300 px-3 py-4 text-center font-semibold text-slate-700 bg-slate-50/50">
-                    1
+                <td class="border border-slate-300 p-3 text-center font-bold text-slate-700 row-number">
+                    ${tbody.children.length + 1}
                 </td>
-                <td class="border border-slate-300 p-3 text-center align-top">
-                    <div class="flex flex-col items-center justify-center gap-2">
-                        <!-- Preview Image Container -->
-                        <div id="preview-container-${rowId}" class="hidden relative group w-full max-w-[200px] h-36 bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
-                            <img id="preview-img-${rowId}" src="" alt="Dokumentasi" class="w-full h-full object-cover">
-                            <button onclick="removeImage('${rowId}')" type="button" class="action-column no-print-element absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white p-1.5 rounded-full text-xs shadow-md opacity-90 group-hover:opacity-100 transition-opacity" title="Hapus Gambar">
-                                <i class="fa-solid fa-xmark"></i>
-                            </button>
+                <td class="border border-slate-300 p-3 align-top">
+                    <div class="flex flex-col items-center gap-2">
+                        <div id="preview-container-${rowCount}" class="hidden w-full flex justify-center">
+                            <img id="preview-${rowCount}" class="max-h-48 rounded shadow-sm object-contain border border-slate-200" src="" alt="Dokumentasi">
                         </div>
-
-                        <!-- Upload Input Button -->
-                        <label id="upload-label-${rowId}" for="input-img-${rowId}" class="action-column cursor-pointer inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium px-3 py-2 rounded-lg border border-slate-300 transition-all w-full justify-center py-4">
-                            <i class="fa-solid fa-camera text-slate-500 text-base"></i>
-                            <span>Pilih Foto</span>
+                        <label class="no-print cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs py-1.5 px-3 rounded border border-slate-300 transition text-center w-full">
+                            <span>📷 Pilih / Ambil Foto</span>
+                            <input type="file" accept="image/*" class="hidden" onchange="handleImageUpload(event, ${rowCount})">
                         </label>
-                        <input type="file" id="input-img-${rowId}" accept="image/*" class="hidden" onchange="handleImageUpload(event, '${rowId}')">
                     </div>
                 </td>
                 <td class="border border-slate-300 p-3 align-top">
-                    <textarea placeholder="Tuliskan keterangan kegiatan di sini..." class="w-full h-32 p-2.5 text-sm text-slate-800 bg-transparent border border-transparent focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 rounded-lg resize-y outline-none transition-all" rows="3"></textarea>
+                    <textarea class="w-full h-28 p-2 border border-slate-200 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none resize-y text-slate-700 text-sm cell-text" placeholder="Isikan keterangan kegiatan secara bebas di sini..."></textarea>
                 </td>
-                <td class="action-column border border-slate-300 px-3 py-4 text-center align-middle">
-                    <button onclick="deleteRow('${rowId}')" class="text-rose-500 hover:text-rose-700 hover:bg-rose-50 p-2 rounded-lg transition-colors" title="Hapus Baris">
-                        <i class="fa-solid fa-trash-can text-lg"></i>
+                <td class="border border-slate-300 p-3 text-center align-middle no-print">
+                    <button onclick="deleteRow(${rowCount})" class="text-red-500 hover:text-red-700 p-1 rounded" title="Hapus Baris">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" />
+                        </svg>
                     </button>
                 </td>
             `;
 
             tbody.appendChild(tr);
-            updateRowNumbers();
-            checkEmptyState();
+            updateNumbers();
         }
 
-        // Fungsi Hapus Baris
-        function deleteRow(rowId) {
-            const row = document.getElementById(rowId);
+        function deleteRow(id) {
+            const row = document.getElementById(`row-${id}`);
             if (row) {
                 row.remove();
-                updateRowNumbers();
-                checkEmptyState();
-                showToast("Baris berhasil dihapus", "fa-trash-can", "text-rose-400");
+                updateNumbers();
             }
         }
 
-        // Fungsi Update Nomor Urut Otomatis
-        function updateRowNumbers() {
-            const rows = document.querySelectorAll('#activity-table-body tr');
+        function updateNumbers() {
+            const rows = document.querySelectorAll('#tableBody tr');
             rows.forEach((row, index) => {
                 const numberCell = row.querySelector('.row-number');
                 if (numberCell) {
-                    numberCell.textContent = index + 1;
+                    numberCell.innerText = index + 1;
                 }
             });
         }
 
-        // Memeriksa jika tabel kosong
-        function checkEmptyState() {
-            const tbody = document.getElementById('activity-table-body');
-            const emptyState = document.getElementById('empty-state');
-            if (tbody.children.length === 0) {
-                emptyState.classList.remove('hidden');
-            } else {
-                emptyState.classList.add('hidden');
-            }
-        }
-
-        // Handler untuk Mengunggah Foto dari Perangkat/HP
-        function handleImageUpload(event, rowId) {
+        function handleImageUpload(event, id) {
             const file = event.target.files[0];
             if (file) {
-                if (!file.type.startsWith('image/')) {
-                    showToast('Harap pilih file berupa gambar!', 'fa-triangle-exclamation', 'text-amber-400');
-                    return;
-                }
-
                 const reader = new FileReader();
                 reader.onload = function(e) {
-                    const imgElement = document.getElementById(`preview-img-${rowId}`);
-                    const previewContainer = document.getElementById(`preview-container-${rowId}`);
-                    const uploadLabel = document.getElementById(`upload-label-${rowId}`);
-
-                    imgElement.src = e.target.result;
-                    previewContainer.classList.remove('hidden');
-                    uploadLabel.classList.add('hidden');
-                    showToast("Foto berhasil diunggah", "fa-circle-check", "text-emerald-400");
+                    const preview = document.getElementById(`preview-${id}`);
+                    const container = document.getElementById(`preview-container-${id}`);
+                    preview.src = e.target.result;
+                    container.classList.remove('hidden');
                 };
                 reader.readAsDataURL(file);
             }
         }
 
-        // Menghapus Foto yang Diunggah
-        function removeImage(rowId) {
-            const imgElement = document.getElementById(`preview-img-${rowId}`);
-            const previewContainer = document.getElementById(`preview-container-${rowId}`);
-            const uploadLabel = document.getElementById(`upload-label-${rowId}`);
-            const inputElement = document.getElementById(`input-img-${rowId}`);
-
-            imgElement.src = '';
-            inputElement.value = '';
-            previewContainer.classList.add('hidden');
-            uploadLabel.classList.remove('hidden');
-        }
-
-        // Fungsi Export Dokumen ke PDF
         function exportToPDF() {
-            const tbody = document.getElementById('activity-table-body');
-            if (tbody.children.length === 0) {
-                showToast("Tambahkan minimal 1 baris sebelum menyimpan!", "fa-triangle-exclamation", "text-amber-400");
-                return;
-            }
+            setPrintDate();
+            
+            // Sembunyikan tombol & input yang tidak perlu masuk ke PDF
+            const noPrintElements = document.querySelectorAll('.no-print');
+            noPrintElements.forEach(el => el.style.display = 'none');
 
-            // Set Tanggal Cetak
-            const now = new Date();
-            const optionsDate = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-            document.getElementById('pdf-date-info').textContent = `Dicetak pada: ${now.toLocaleDateString('id-ID', optionsDate)}`;
+            // Konversi textarea menjadi div teks agar hasil cetak jernih & teratur
+            const textareas = document.querySelectorAll('textarea');
+            const createdDivs = [];
+            textareas.forEach(ta => {
+                const div = document.createElement('div');
+                div.className = 'p-1 text-slate-700 text-sm cell-text min-h-[80px]';
+                div.innerText = ta.value;
+                ta.style.display = 'none';
+                ta.parentNode.appendChild(div);
+                createdDivs.push({ ta, div });
+            });
 
-            // Sembunyikan kolom aksi saat export
-            const actionElements = document.querySelectorAll('.action-column');
-            actionElements.forEach(el => el.style.display = 'none');
-
-            // Konfigurasi html2pdf
-            const element = document.getElementById('pdf-content');
+            const element = document.getElementById('reportArea');
+            
+            // Opsi optimasi PDF khusus iPhone / iOS
             const opt = {
-                margin:       [10, 10, 10, 10], // top, left, bottom, right in mm
-                filename:     `Laporan_Kegiatan_${now.toISOString().slice(0, 10)}.pdf`,
+                margin:       [10, 10, 10, 10],
+                filename:     'Laporan_Kegiatan.pdf',
                 image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, logging: false },
+                html2canvas:  { 
+                    scale: 2, 
+                    useCORS: true, 
+                    scrollX: 0, 
+                    scrollY: 0,
+                    windowWidth: 1024 
+                },
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
 
-            showToast("Memproses file PDF...", "fa-spinner", "text-indigo-400");
-
-            // Jalankan Ekspor PDF
+            // Proses pembuatan PDF
             html2pdf().set(opt).from(element).save().then(() => {
-                // Tampilkan kembali kolom aksi setelah PDF selesai
-                actionElements.forEach(el => el.style.display = '');
-                showToast("PDF berhasil diunduh!", "fa-circle-check", "text-emerald-400");
-            }).catch(err => {
-                actionElements.forEach(el => el.style.display = '');
-                console.error(err);
-                showToast("Gagal membuat PDF. Coba lagi.", "fa-circle-exclamation", "text-rose-400");
+                // Kembalikan tampilan semula setelah PDF diunduh
+                noPrintElements.forEach(el => el.style.display = '');
+                createdDivs.forEach(item => {
+                    item.ta.style.display = '';
+                    item.div.remove();
+                });
             });
-        }
-
-        // Fungsi Menampilkan Toast Notification
-        function showToast(message, iconClass, iconColorClass) {
-            const toast = document.getElementById('toast');
-            const toastMessage = document.getElementById('toast-message');
-            const toastIcon = document.getElementById('toast-icon');
-
-            toastMessage.textContent = message;
-            toastIcon.className = `fa-solid ${iconClass} ${iconColorClass}`;
-
-            toast.classList.remove('opacity-0', 'pointer-events-none');
-            toast.classList.add('opacity-100');
-
-            setTimeout(() => {
-                toast.classList.remove('opacity-100');
-                toast.classList.add('opacity-0', 'pointer-events-none');
-            }, 3000);
         }
     </script>
 </body>
