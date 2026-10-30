@@ -7,23 +7,30 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Gaya Tampilan Cetak & Ekspor PDF */
+        /* Mengosongkan margin halaman cetak agar Safari TIDAK mencetak header/footer (alamat web & tanggal bawaan) */
+        @page {
+            margin: 0;
+            size: A4 portrait;
+        }
+
+        /* Styling khusus saat proses Cetak / Simpan PDF */
         @media print {
-            /* Sembunyikan elemen navigasi/tombol saat dicetak */
             .no-print {
                 display: none !important;
             }
-            body {
+            html, body {
                 background: white !important;
                 padding: 0 !important;
                 margin: 0 !important;
+                width: 100% !important;
             }
             .page-container {
                 box-shadow: none !important;
                 border: none !important;
                 width: 100% !important;
                 max-width: 100% !important;
-                padding: 0 !important;
+                padding: 15mm !important; /* Memberikan jarak tepi di dalam kertas */
+                margin: 0 !important;
             }
             textarea {
                 border: none !important;
@@ -81,7 +88,7 @@
                     </tr>
                 </thead>
                 <tbody id="tableBody">
-                    <!-- Baris akan ditambahkan secara dinamis -->
+                    <!-- Baris ditambahkan dinamis -->
                 </tbody>
             </table>
 
@@ -180,7 +187,6 @@
         function exportToPDF() {
             setPrintDate();
             
-            // Mengubah textarea menjadi teks biasa sementara sebelum cetak
             const textareas = document.querySelectorAll('textarea');
             const createdDivs = [];
             textareas.forEach(ta => {
@@ -192,10 +198,8 @@
                 createdDivs.push({ ta, div });
             });
 
-            // Memicu dialog Simpan PDF Bawaan iOS/Safari
             window.print();
 
-            // Mengembalikan ke bentuk input setelah cetak
             setTimeout(() => {
                 createdDivs.forEach(item => {
                     item.ta.style.display = '';
