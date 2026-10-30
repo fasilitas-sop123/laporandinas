@@ -6,40 +6,18 @@
     <title>Laporan Kegiatan</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Library html2pdf.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        /* Mengosongkan margin halaman cetak agar Safari TIDAK mencetak header/footer (alamat web & tanggal bawaan) */
-        @page {
-            margin: 0;
-            size: A4 portrait;
+        /* Mengunci ukuran area PDF agar persis ukuran A4 saat diproses */
+        .pdf-export-mode {
+            width: 794px !important;
+            max-width: 794px !important;
+            min-width: 794px !important;
+            margin: 0 auto !important;
+            background-color: #ffffff !important;
         }
 
-        /* Styling khusus saat proses Cetak / Simpan PDF */
-        @media print {
-            .no-print {
-                display: none !important;
-            }
-            html, body {
-                background: white !important;
-                padding: 0 !important;
-                margin: 0 !important;
-                width: 100% !important;
-            }
-            .page-container {
-                box-shadow: none !important;
-                border: none !important;
-                width: 100% !important;
-                max-width: 100% !important;
-                padding: 15mm !important; /* Memberikan jarak tepi di dalam kertas */
-                margin: 0 !important;
-            }
-            textarea {
-                border: none !important;
-                resize: none !important;
-                padding: 0 !important;
-            }
-        }
-
-        /* Penanganan teks panjang */
         .cell-text {
             white-space: pre-wrap;
             word-break: break-word;
@@ -62,14 +40,14 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z" clip-rule="evenodd" />
                 </svg>
-                Simpan / Cetak PDF
+                Simpan PDF
             </button>
         </div>
     </div>
 
     <!-- Area Dokumen Utama -->
-    <div class="max-w-4xl mx-auto">
-        <div id="reportArea" class="page-container bg-white p-6 shadow-md border border-slate-200 rounded-sm">
+    <div class="overflow-x-auto pb-6">
+        <div id="reportArea" class="max-w-4xl mx-auto bg-white p-6 shadow-md border border-slate-200 rounded-sm">
             
             <!-- Header Dokumen -->
             <div class="text-center mb-6 pb-4 border-b-2 border-slate-300">
@@ -187,6 +165,13 @@
         function exportToPDF() {
             setPrintDate();
             
+            const element = document.getElementById('reportArea');
+
+            // 1. Sembunyikan elemen aksi/tombol
+            const noPrintElements = document.querySelectorAll('.no-print');
+            noPrintElements.forEach(el => el.style.setProperty('display', 'none', 'important'));
+
+            // 2. Ubah textarea menjadi elemen div biasa
             const textareas = document.querySelectorAll('textarea');
             const createdDivs = [];
             textareas.forEach(ta => {
@@ -198,14 +183,31 @@
                 createdDivs.push({ ta, div });
             });
 
-            window.print();
+            // 3. Kunci lebar dokumen ke format desktop/A4 secara temporer
+            element.classList.add('pdf-export-mode');
 
-            setTimeout(() => {
+            // 4. Konfigurasi pencetakan PDF murni tanpa dialog browser
+            const opt = {
+                margin:       [10, 10, 10, 10],
+                filename:     'Laporan_Kegiatan.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { 
+                    scale: 2, 
+                    useCORS: true,
+                    windowWidth: 800
+                },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            // 5. Unduh file PDF dan kembalikan tampilan
+            html2pdf().set(opt).from(element).save().then(() => {
+                element.classList.remove('pdf-export-mode');
+                noPrintElements.forEach(el => el.style.display = '');
                 createdDivs.forEach(item => {
                     item.ta.style.display = '';
                     item.div.remove();
                 });
-            }, 500);
+            });
         }
     </script>
 </body>
