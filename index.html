@@ -12,6 +12,17 @@
             margin: 10mm;
         }
 
+        /* Penguncian Garis Tabel Rapi & Tidak Putus antar Halaman */
+        table {
+            border-collapse: collapse !important;
+            width: 100% !important;
+        }
+
+        th, td {
+            border: 1px solid #cbd5e1 !important; /* Slate-300 */
+            box-sizing: border-box !important;
+        }
+
         /* Styling khusus saat proses Cetak / Simpan PDF */
         @media print {
             .no-print {
@@ -31,13 +42,18 @@
                 padding: 0 !important;
                 margin: 0 !important;
             }
-            /* Memastikan baris tabel dan teks tidak terpotong antar halaman */
+            /* Mencegah pemotongan baris di tengah-tengah halaman (Page Break) */
             tr {
                 page-break-inside: avoid !important;
                 break-inside: avoid !important;
             }
             td {
                 height: auto !important;
+            }
+            textarea {
+                border: none !important;
+                resize: none !important;
+                padding: 0 !important;
             }
         }
 
@@ -80,14 +96,14 @@
                 <p class="text-sm text-slate-500 mt-1">Dokumentasi dan Laporan Pelaksanaan Kegiatan</p>
             </div>
 
-            <!-- Tabel Utama -->
+            <!-- Tabel Utama dengan Proporsi Kolom Dokumentasi Lebih Lebar -->
             <table class="w-full border-collapse border border-slate-300 text-sm">
                 <thead>
                     <tr class="bg-slate-100 text-slate-700 uppercase text-xs tracking-wider">
-                        <th class="border border-slate-300 p-2 w-10 text-center">NO</th>
-                        <th class="border border-slate-300 p-2 w-1/3 text-center">DOKUMENTASI</th>
-                        <th class="border border-slate-300 p-2 text-center">KETERANGAN</th>
-                        <th class="border border-slate-300 p-2 w-12 text-center no-print">AKSI</th>
+                        <th class="p-2.5 w-[8%] text-center">NO</th>
+                        <th class="p-2.5 w-[55%] text-center">DOKUMENTASI</th>
+                        <th class="p-2.5 w-[30%] text-center">KETERANGAN</th>
+                        <th class="p-2.5 w-[7%] text-center no-print">AKSI</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody">
@@ -121,17 +137,17 @@
             rowCount++;
             const tbody = document.getElementById('tableBody');
             const tr = document.createElement('tr');
-            tr.className = "row-item border-b border-slate-300";
+            tr.className = "row-item";
             tr.id = `row-${rowCount}`;
 
             tr.innerHTML = `
-                <td class="border border-slate-300 p-2 text-center font-bold text-slate-700 row-number align-top">
+                <td class="p-2.5 text-center font-bold text-slate-700 row-number align-top">
                     ${tbody.children.length + 1}
                 </td>
-                <td class="border border-slate-300 p-2 align-top">
+                <td class="p-2.5 align-top">
                     <div class="flex flex-col items-center gap-2">
                         <div id="preview-container-${rowCount}" class="hidden w-full flex justify-center">
-                            <img id="preview-${rowCount}" class="max-h-48 rounded shadow-sm object-contain border border-slate-200" src="" alt="Dokumentasi">
+                            <img id="preview-${rowCount}" class="max-h-72 w-full rounded shadow-sm object-contain border border-slate-200" src="" alt="Dokumentasi">
                         </div>
                         <label class="no-print cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs py-1.5 px-3 rounded border border-slate-300 transition text-center w-full">
                             <span>📷 Pilih / Ambil Foto</span>
@@ -139,10 +155,10 @@
                         </label>
                     </div>
                 </td>
-                <td class="border border-slate-300 p-2 align-top">
-                    <textarea class="w-full h-28 p-2 border border-slate-200 rounded focus:ring-1 focus:ring-blue-500 outline-none resize-y text-slate-700 text-sm cell-text" placeholder="Isikan keterangan kegiatan..."></textarea>
+                <td class="p-2.5 align-top">
+                    <textarea class="w-full h-32 p-2 border border-slate-200 rounded focus:ring-1 focus:ring-blue-500 outline-none resize-y text-slate-700 text-sm cell-text" placeholder="Isikan keterangan kegiatan..."></textarea>
                 </td>
-                <td class="border border-slate-300 p-2 text-center align-middle no-print">
+                <td class="p-2.5 text-center align-middle no-print">
                     <button onclick="deleteRow(${rowCount})" class="text-red-500 hover:text-red-700 p-1 rounded" title="Hapus">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" />
@@ -190,7 +206,7 @@
         function exportToPDF() {
             setPrintDate();
             
-            // Konversi textarea ke div dinamis tanpa batasan tinggi (min-height dihapus agar baris menyesuaikan isi)
+            // Konversi textarea ke div dinamis tanpa batasan tinggi
             const textareas = document.querySelectorAll('textarea');
             const createdDivs = [];
             textareas.forEach(ta => {
@@ -202,10 +218,10 @@
                 createdDivs.push({ ta, div });
             });
 
-            // Memicu pencetakan bawaan browser (menyimpan header/footer URL bawaan Safari)
+            // Panggil fungsi cetak browser
             window.print();
 
-            // Mengembalikan input textarea setelah cetak
+            // Mengembalikan ke bentuk input setelah pencetakan selesai
             setTimeout(() => {
                 createdDivs.forEach(item => {
                     item.ta.style.display = '';
