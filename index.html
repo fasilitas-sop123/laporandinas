@@ -61,10 +61,10 @@
             <table class="w-full border-collapse border border-slate-300 text-sm">
                 <thead>
                     <tr class="bg-slate-100 text-slate-700 uppercase text-xs tracking-wider">
-                        <th class="border border-slate-300 p-2 w-10 text-center">NO</th>
-                        <th class="border border-slate-300 p-2 w-1/3 text-center">DOKUMENTASI</th>
-                        <th class="border border-slate-300 p-2 text-center">KETERANGAN</th>
-                        <th class="border border-slate-300 p-2 w-12 text-center no-print">AKSI</th>
+                        <th class="border border-slate-300 p-2 w-[8%] text-center">NO</th>
+                        <th class="border border-slate-300 p-2 w-[55%] text-center">DOKUMENTASI</th>
+                        <th class="border border-slate-300 p-2 w-[30%] text-center">KETERANGAN</th>
+                        <th class="border border-slate-300 p-2 w-[7%] text-center no-print">AKSI</th>
                     </tr>
                 </thead>
                 <tbody id="tableBody">
@@ -108,7 +108,7 @@
                 <td class="border border-slate-300 p-2 align-top">
                     <div class="flex flex-col items-center gap-2">
                         <div id="preview-container-${rowCount}" class="hidden w-full flex justify-center">
-                            <img id="preview-${rowCount}" class="max-h-48 rounded shadow-sm object-contain border border-slate-200" src="" alt="Dokumentasi">
+                            <img id="preview-${rowCount}" class="max-h-72 w-full rounded shadow-sm object-contain border border-slate-200" src="" alt="Dokumentasi">
                         </div>
                         <label class="no-print cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs py-1.5 px-3 rounded border border-slate-300 transition text-center w-full">
                             <span>📷 Pilih / Ambil Foto</span>
@@ -117,7 +117,7 @@
                     </div>
                 </td>
                 <td class="border border-slate-300 p-2 align-top">
-                    <textarea class="w-full h-28 p-2 border border-slate-200 rounded focus:ring-1 focus:ring-blue-500 outline-none resize-y text-slate-700 text-sm cell-text" placeholder="Isikan keterangan kegiatan..."></textarea>
+                    <textarea class="w-full h-32 p-2 border border-slate-200 rounded focus:ring-1 focus:ring-blue-500 outline-none resize-y text-slate-700 text-sm cell-text" placeholder="Isikan keterangan kegiatan..."></textarea>
                 </td>
                 <td class="border border-slate-300 p-2 text-center align-middle no-print">
                     <button onclick="deleteRow(${rowCount})" class="text-red-500 hover:text-red-700 p-1 rounded" title="Hapus">
@@ -172,7 +172,7 @@
             const noPrintElements = document.querySelectorAll('.no-print');
             noPrintElements.forEach(el => el.style.display = 'none');
 
-            // 2. Ubah textarea menjadi elemen div biasa (agar teks penuh tidak terpotong)
+            // 2. Ubah textarea menjadi elemen div biasa
             const textareas = document.querySelectorAll('textarea');
             const createdDivs = [];
             textareas.forEach(ta => {
@@ -184,23 +184,19 @@
                 createdDivs.push({ ta, div });
             });
 
-            // 3. Kunci lebar dokumen agar tampilan JPG konsisten (terutama di layar HP)
             element.classList.add('jpg-export-mode');
 
-            // 4. Konversi elemen HTML menjadi Gambar JPG
             html2canvas(element, {
-                scale: 2, // Resolusi gambar tinggi (HD)
+                scale: 2,
                 useCORS: true,
                 backgroundColor: '#ffffff',
                 windowWidth: 800
             }).then(canvas => {
-                // Tautan unduh otomatis
                 const link = document.createElement('a');
                 link.download = 'Laporan_Kegiatan.jpg';
                 link.href = canvas.toDataURL('image/jpeg', 0.95);
                 link.click();
 
-                // Kembalikan tampilan aplikasi semula
                 element.classList.remove('jpg-export-mode');
                 noPrintElements.forEach(el => el.style.display = '');
                 createdDivs.forEach(item => {
