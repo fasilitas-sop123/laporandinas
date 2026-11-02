@@ -6,46 +6,23 @@
     <title>Laporan Kegiatan</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Library html2canvas untuk Konversi ke Gambar JPG -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
-        @page {
-            size: A4 portrait;
-            margin: 10mm;
-        }
-
-        /* Styling khusus saat proses Cetak / Simpan PDF */
-        @media print {
-            .no-print {
-                display: none !important;
-            }
-            html, body {
-                background: white !important;
-                padding: 0 !important;
-                margin: 0 !important;
-                width: 100% !important;
-            }
-            .page-container {
-                box-shadow: none !important;
-                border: none !important;
-                width: 100% !important;
-                max-width: 100% !important;
-                padding: 0 !important;
-                margin: 0 !important;
-            }
-            /* Memastikan baris tabel dan teks tidak terpotong antar halaman */
-            tr {
-                page-break-inside: avoid !important;
-                break-inside: avoid !important;
-            }
-            td {
-                height: auto !important;
-            }
-        }
-
-        /* Penanganan teks panjang agar otomatis turun baris */
         .cell-text {
-            white-space: pre-wrap !important;
-            word-break: break-word !important;
-            overflow-wrap: break-word !important;
+            white-space: pre-wrap;
+            word-break: break-word;
+            overflow-wrap: break-word;
+        }
+
+        /* Mengunci ukuran area cetak agar rapi saat dikonversi ke JPG */
+        .jpg-export-mode {
+            width: 800px !important;
+            max-width: 800px !important;
+            min-width: 800px !important;
+            margin: 0 auto !important;
+            background-color: #ffffff !important;
+            padding: 30px !important;
         }
     </style>
 </head>
@@ -55,24 +32,24 @@
     <div class="max-w-4xl mx-auto mb-4 bg-white p-4 rounded-xl shadow-sm flex justify-between items-center flex-wrap gap-2 no-print">
         <h1 class="text-xl font-bold text-slate-700">Aplikasi Laporan Kegiatan</h1>
         <div class="flex gap-2">
-            <button onclick="addRow()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow transition flex items-center gap-1">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <button onclick="addRow()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow transition flex items-center gap-1 text-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
                 </svg>
                 Tambah Baris
             </button>
-            <button onclick="exportToPDF()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded-lg shadow transition flex items-center gap-1">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z" clip-rule="evenodd" />
+            <button onclick="exportToJPG()" class="bg-amber-600 hover:bg-amber-700 text-white font-semibold py-2 px-4 rounded-lg shadow transition flex items-center gap-1 text-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" />
                 </svg>
-                Simpan / Cetak PDF
+                Simpan JPG
             </button>
         </div>
     </div>
 
     <!-- Area Dokumen Utama -->
-    <div class="max-w-4xl mx-auto">
-        <div id="reportArea" class="page-container bg-white p-6 shadow-md border border-slate-200 rounded-sm">
+    <div class="max-w-4xl mx-auto overflow-x-auto pb-6">
+        <div id="reportArea" class="bg-white p-6 shadow-md border border-slate-200 rounded-sm">
             
             <!-- Header Dokumen -->
             <div class="text-center mb-6 pb-4 border-b-2 border-slate-300">
@@ -187,31 +164,50 @@
             }
         }
 
-        function exportToPDF() {
+        function exportToJPG() {
             setPrintDate();
-            
-            // Konversi textarea ke div dinamis tanpa batasan tinggi (min-height dihapus agar baris menyesuaikan isi)
+            const element = document.getElementById('reportArea');
+
+            // 1. Sembunyikan tombol & kolom aksi
+            const noPrintElements = document.querySelectorAll('.no-print');
+            noPrintElements.forEach(el => el.style.display = 'none');
+
+            // 2. Ubah textarea menjadi elemen div biasa (agar teks penuh tidak terpotong)
             const textareas = document.querySelectorAll('textarea');
             const createdDivs = [];
             textareas.forEach(ta => {
                 const div = document.createElement('div');
-                div.className = 'text-slate-700 text-sm cell-text leading-normal w-full';
-                div.innerText = ta.value;
+                div.className = 'p-1 text-slate-700 text-sm cell-text w-full';
+                div.innerText = ta.value || '-';
                 ta.style.display = 'none';
                 ta.parentNode.appendChild(div);
                 createdDivs.push({ ta, div });
             });
 
-            // Memicu pencetakan bawaan browser (menyimpan header/footer URL bawaan Safari)
-            window.print();
+            // 3. Kunci lebar dokumen agar tampilan JPG konsisten (terutama di layar HP)
+            element.classList.add('jpg-export-mode');
 
-            // Mengembalikan input textarea setelah cetak
-            setTimeout(() => {
+            // 4. Konversi elemen HTML menjadi Gambar JPG
+            html2canvas(element, {
+                scale: 2, // Resolusi gambar tinggi (HD)
+                useCORS: true,
+                backgroundColor: '#ffffff',
+                windowWidth: 800
+            }).then(canvas => {
+                // Tautan unduh otomatis
+                const link = document.createElement('a');
+                link.download = 'Laporan_Kegiatan.jpg';
+                link.href = canvas.toDataURL('image/jpeg', 0.95);
+                link.click();
+
+                // Kembalikan tampilan aplikasi semula
+                element.classList.remove('jpg-export-mode');
+                noPrintElements.forEach(el => el.style.display = '');
                 createdDivs.forEach(item => {
                     item.ta.style.display = '';
                     item.div.remove();
                 });
-            }, 500);
+            });
         }
     </script>
 </body>
