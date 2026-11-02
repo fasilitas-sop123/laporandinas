@@ -98,21 +98,32 @@
     <script>
         let rowCount = 0;
 
-        window.onload = function() {
+        // Inisialisasi otomatis setelah DOM siap
+        document.addEventListener('DOMContentLoaded', function() {
             addRow();
             addRow();
             setPrintDate();
-        };
+        });
 
         function setPrintDate() {
             const now = new Date();
             const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-            document.getElementById('printDate').innerText = 'Dicetak pada: ' + now.toLocaleDateString('id-ID', options);
+            const dateElement = document.getElementById('printDate');
+            if (dateElement) {
+                dateElement.innerText = 'Dicetak pada: ' + now.toLocaleDateString('id-ID', options);
+            }
+        }
+
+        function autoResizeTextarea(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = (textarea.scrollHeight) + 'px';
         }
 
         function addRow() {
             rowCount++;
             const tbody = document.getElementById('tableBody');
+            if (!tbody) return;
+
             const tr = document.createElement('tr');
             tr.className = "row-item";
             tr.id = `row-${rowCount}`;
@@ -133,7 +144,7 @@
                     </div>
                 </td>
                 <td class="p-2.5 align-top">
-                    <textarea id="text-${rowCount}" class="w-full h-32 p-2 border border-slate-200 rounded focus:ring-1 focus:ring-blue-500 outline-none resize-y text-slate-700 text-sm cell-text" placeholder="Isikan keterangan kegiatan..."></textarea>
+                    <textarea id="text-${rowCount}" oninput="autoResizeTextarea(this)" class="w-full min-h-[100px] p-2 border border-slate-200 rounded focus:ring-1 focus:ring-blue-500 outline-none resize-y text-slate-700 text-sm cell-text" placeholder="Isikan keterangan kegiatan..."></textarea>
                 </td>
                 <td class="p-2.5 text-center align-middle no-print">
                     <button onclick="deleteRow(${rowCount})" class="text-red-500 hover:text-red-700 p-1 rounded" title="Hapus">
@@ -173,8 +184,10 @@
                 reader.onload = function(e) {
                     const preview = document.getElementById(`preview-${id}`);
                     const container = document.getElementById(`preview-container-${id}`);
-                    preview.src = e.target.result;
-                    container.classList.remove('hidden');
+                    if (preview && container) {
+                        preview.src = e.target.result;
+                        container.classList.remove('hidden');
+                    }
                 };
                 reader.readAsDataURL(file);
             }
@@ -193,7 +206,7 @@
             textareas.forEach(ta => {
                 const div = document.createElement('div');
                 div.className = 'text-slate-700 text-sm cell-text w-full p-1';
-                div.style.minHeight = '100px';
+                div.style.minHeight = '80px';
                 div.innerText = ta.value || '-';
                 ta.style.display = 'none';
                 ta.parentNode.appendChild(div);
@@ -217,3 +230,117 @@
                 element.classList.remove('jpg-export-mode');
                 noPrintElements.forEach(el => el.style.display = '');
                 createdDivs.forEach(item => {
+                    item.ta.style.display = '';
+                    item.div.remove();
+                });
+            });
+        }
+
+        // --- FUNGSI EKSPOR DOKUMEN PDF VEKTOR ---
+        async function exportToPDF() {
+            setPrintDate();
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+
+            // Header Dokumen PDF
+            doc.setFont('Helvetica', 'bold');
+            doc.setFontSize(16);
+            doc.text('KEGIATAN', 105, 18, { align: 'center' });
+            
+            doc.setFont('Helvetica', 'normal');
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text('Dokumentasi dan Laporan Pelaksanaan Kegiatan', 105, 24, { align: 'center' });
+            
+            doc.setDrawColor(200);
+            doc.setLineWidth(0.5);
+            doc.line(14, 28, 196, 28);
+
+            // Ekstraksi Data
+            const rows = document.querySelectorAll('#tableBody tr');
+            const tableData = [];
+
+            for (let index = 0; index < rows.length; index++) {
+                const row = rows[index];
+                const id = row.id.replace('row-', '');
+                const imgEl = document.getElementById(`preview-${id}`);
+                const containerEl = document.getElementById(`preview-container-${id}`);
+                const isImgVisible = containerEl && !containerEl.classList.contains('hidden');
+                const textVal = document.getElementById(`text-${id}`) ? document.getElementById(`text-${id}`).value : '-';
+
+                let imgData = null;
+                if (isImgVisible && imgEl && imgEl.src) {
+                    imgData = imgEl.src;
+                }
+
+                tableData.push({
+                    no: index + 1,
+                    image: imgData,
+                    keterangan: textVal || '-'
+                });
+            }
+
+            // Render Tabel PDF Vektor
+            doc.autoTable({
+                startY: 32,
+                head: [['NO', 'DOKUMENTASI', 'KETERANGAN']],
+                body: tableData.map(item => [item.no, '', item.keterangan]),
+                theme: 'grid',
+                headStyles: {
+                    fillColor: [241, 245, 249],
+                    textColor: [51, 65, 85],
+                    fontStyle: 'bold',
+                    halign: 'center'
+                },
+                columnStyles: {
+                    0: { cellWidth: 15, halign: 'center', fontStyle: 'bold' },
+                    1: { cellWidth: 100, halign: 'center' },
+                    2: { cellWidth: 'auto', halign: 'left' }
+                },
+                styles: {
+                    valign: 'top',
+                    fontSize: 9,
+                    cellPadding: 4,
+                    overflow: 'linebreak'
+                },
+                didDrawCell: function (data) {
+                    if (data.section === 'body' && data.column.index === 1) {
+                        const rowData = tableData[data.row.index];
+                        if (rowData.image) {
+                            try {
+                                const dimW = 90;
+                                const dimH = 50;
+                                const posX = data.cell.x + (data.cell.width - dimW) / 2;
+                                const posY = data.cell.y + 2;
+                                doc.addImage(rowData.image, 'JPEG', posX, posY, dimW, dimH);
+                            } catch (e) {
+                                console.log('Gagal menyisipkan gambar ke PDF:', e);
+                            }
+                        }
+                    }
+                },
+                willDrawCell: function (data) {
+                    if (data.section === 'body') {
+                        const rowData = tableData[data.row.index];
+                        if (rowData.image) {
+                            data.row.height = 55;
+                        }
+                    }
+                }
+            });
+
+            // Footer Tanggal
+            const finalY = doc.lastAutoTable.finalY + 10;
+            const now = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+            const dateStr = 'Dicetak pada: ' + now.toLocaleDateString('id-ID', options);
+
+            doc.setFontSize(8);
+            doc.setTextColor(150);
+            doc.text(dateStr, 196, Math.min(finalY, 285), { align: 'right' });
+
+            doc.save('Laporan_Kegiatan.pdf');
+        }
+    </script>
+</body>
+</html>
